@@ -1,17 +1,31 @@
 module Words
   class Corpus
+    include Frequencies
+    include TextSource
+
+    attr_reader :ngrams
     def initialize(docs=[])
+      puts "=== Created corpus!"
       @documents = docs
-      @ngrams = @documents.first.ngrams 
-      @documents.each do |doc|
-	next if doc == @documents.first
-	@ngrams.merge(doc.ngrams)
-      end
+      @ngrams = Array.new(@documents.map(&:ngrams).flatten.map(&:order).max)
+      
+      analyze
     end
 
-    def word; @ngrams.pick end
-    def sentence
-      @ngrams.walk.join(' ').capitalize + '. '
+    def analyze
+      @documents.each do |doc|
+	@ngrams.each_with_index do |ngram,i| 
+	  @ngrams[i] ||= Ngram.new
+	  @ngrams[i].merge(doc.ngrams[i] || {})
+	end
+      end
+
+      workers=[]
+      @ngrams.each do |ngram|
+	workers << Thread.new { ngram.postprocess }
+      end
+
+      workers.each(&:join)
     end
   end
 end

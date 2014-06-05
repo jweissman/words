@@ -4,8 +4,10 @@ require 'words/frequencies/sampling'
 require 'words/frequencies/letters'
 require 'words/frequencies/bigrams'
 require 'words/frequencies/ngram'
+require 'words/text_source'
 require 'words/document'
 require 'words/corpus'
+require 'words/generator'
 
 module Words
   include Frequencies::Sampling
@@ -50,16 +52,21 @@ module Words
     # "./data/melville-moby_dick.txt",
     # "./data/republic.mb.txt",
     # "./data/ulysses.txt",
-    # "./data/theory_one.txt"
-    "./data/freedom_of_love-breton.txt"
+    # "./data/theory_one.txt",
+    # "./data/freedom_of_love-breton.txt",
+    "./data/please_stop_worshipping_the_superstar.txt",
+    # "./data/lawrence-amores.txt"
   ]
-  def source_corpus(texts=DEFAULT_SOURCE_TEXTS)
+
+  def source_corpus(files=DEFAULT_SOURCE_TEXTS)
     @current_texts ||= nil
     @source_texts  ||= []
-    unless @current_texts == texts
-      @source_texts = texts.map { |text| Document.new(text) }
+
+    unless @current_texts == files
+      puts "==== updating source corpus to: #{files}"
+      @source_texts = files.map { |file| Document.new(file: file) }
       @source_corpus = Corpus.new(@source_texts)
-      @current_texts  = texts
+      @current_texts  = files
     end
 
     @source_corpus
