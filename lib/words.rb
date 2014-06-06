@@ -1,18 +1,23 @@
-require 'words/version'
+require 'parallel'
 
+require 'words/version'
 require 'words/frequencies/sampling'
 require 'words/frequencies/letters'
 require 'words/frequencies/bigrams'
 require 'words/frequencies/ngram'
+require 'words/text_helpers'
 require 'words/text_source'
 require 'words/document'
 require 'words/corpus'
 require 'words/generator'
 
+require 'ruby-progressbar'
+
 module Words
   include Frequencies::Sampling
   include Frequencies::Letters
   include Frequencies::Bigrams
+  include TextHelpers
 
   def full_bigram_frequencies
     @full_bigram_frequencies ||= normalize_frequencies(full_bigram_counts)
@@ -53,58 +58,20 @@ module Words
     # "./data/republic.mb.txt",
     # "./data/ulysses.txt",
     # "./data/theory_one.txt",
-    # "./data/freedom_of_love-breton.txt",
-    "./data/please_stop_worshipping_the_superstar.txt",
-    # "./data/lawrence-amores.txt"
+    "./data/freedom_of_love-breton.txt",
+    # "./data/please_stop_worshipping_the_superstar.txt",
+    "./data/lawrence-amores.txt"
   ]
 
-  def source_corpus(files=DEFAULT_SOURCE_TEXTS)
-    @current_texts ||= nil
-    @source_texts  ||= []
-
-    unless @current_texts == files
-      puts "==== updating source corpus to: #{files}"
-      @source_texts = files.map { |file| Document.new(file: file) }
-      @source_corpus = Corpus.new(@source_texts)
-      @current_texts  = files
-    end
-
-    @source_corpus
+  def sources
+    @sources ||= Corpus.new(DEFAULT_SOURCE_TEXTS)
   end
 
   def word
-    source_corpus.word
+    sources.word
   end
 
   def sentence
-    source_corpus.sentence
-  end
-
-  def title
-    sentence.gsub('.', '')
-  end
-
-  def paragraph
-    sentences = Array.new((3..7).to_a.sample) { sentence }
-    sentences.join + "\n\n"
-  end
-
-  def with_title(t,content,depth=0)
-    [t,"\n\n",content].join
-  end
-
-  def document(t=title)
-    graphs = Array.new((5..35).to_a.sample) { paragraph }
-    with_title(t,graphs)
-  end
-
-  def corpus(t=title)
-    docs = Array.new((8..20).to_a.sample) { document }
-    with_title(t,docs)
-  end
-
-  def oeuvre(t=title)
-    corpora = Array.new((4..10).to_a.sample) { corpus }
-    with_title(t,corpora)
+    sources.sentence
   end
 end

@@ -3,14 +3,24 @@ module Words
     include Frequencies
     include TextSource
 
-    attr_reader :ngrams
-    def initialize(docs=[])
-      puts "=== Created corpus!"
-      @documents = docs
+    attr_reader :ngrams, :files, :documents
+    def initialize(files=[])
+      @files = files
+      process_text
+    end
+
+    def add(file) 
+      @files << file
+      process_text
+    end
+
+    def process_text
+      @documents = @files.map { |f| Document.new(file: f) }
       @ngrams = Array.new(@documents.map(&:ngrams).flatten.map(&:order).max)
-      
       analyze
     end
+
+    def sentences; @sentence ||= @documents.map(&:sentences).flatten.uniq.sort end
 
     def analyze
       @documents.each do |doc|
@@ -20,12 +30,7 @@ module Words
 	end
       end
 
-      workers=[]
-      @ngrams.each do |ngram|
-	workers << Thread.new { ngram.postprocess }
-      end
-
-      workers.each(&:join)
+      @ngrams.each(&:normalize!)
     end
   end
 end

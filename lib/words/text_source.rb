@@ -1,5 +1,6 @@
 module Words
   module TextSource
+    include TextHelpers
     def generator(target=self)
       @generator = Generator.new(target) unless @generator && @generator.source == target
       @generator

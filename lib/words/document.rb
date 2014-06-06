@@ -3,13 +3,13 @@ module Words
     include Frequencies
     include TextSource
 
-    attr_reader :ngrams, :file, :title, :content
+    attr_reader :ngrams, :file, :title, :content, :sentences
 
     # note this affects performance like n!, so use cautiously
     # also quickly ends up just 'copying' the documents themselves, of course...
-    MAX_NGRAM_DEPTH = 5
+    MAX_NGRAM_DEPTH = 3
 
-    def initialize(options={}) #file, title=nil)
+    def initialize(options={})
       @file       = options.delete(:file) { nil }
       @text       = options.delete(:text) { nil }
       @title      = title || file || 'untitled content'
@@ -20,32 +20,15 @@ module Words
     end
 
     def analyze
-      @ngrams     = Array.new(@max_ngram_depth) { |o| Ngram.new(o+1) }
-      @sentences = split(@content).map { |s| scrub(s) }
-
-      workers = []
-      @ngrams.each do |ngram| 
-	workers << Thread.new do
-          @sentences.each do |line| 
-            words = line.is_a?(Array) ? line : line.split
-            ngram.process(words)
-	  end
-	  ngram.postprocess
-	end
+      @sentences  = split(@content).map { |s| scrub(s) }
+      @ngrams     = Array.new(@max_ngram_depth) do |order| 
+	ngram = Ngram.new(order+1)
+	ngram.process_groups(@sentences)
+	ngram
       end
-      
-      workers.each(&:join)
     end
 
     protected
-    # def process_linesk
-    #     s = scrub(sentence)
-    #     process(s)
-    #     s
-    #   end
-    # end
-
-    private
     def read
       if @file 
 	File.open(file) { |f| @content = f.read }
@@ -56,21 +39,14 @@ module Words
       end
     end
 
-    def process(line)
-      words = line.is_a?(Array) ? line : line.split
-      @ngrams.each do |ngram| 
-	ngram.process(words)
-      end
-    end
-
     def split(content=@content)
       return content if content.is_a?(Array) 
-      content.split(/[\n.?!]/) 
+      content.split(/[\n.?!;-]/) 
     end
 
     def scrub(text)
       text = text.join(' ') if text.is_a?(Array)
-      text.gsub(/[^a-z ]/, ' ')
+      text.downcase.gsub(/[^a-z.-;!,' ]/, '')
     end
   end
 end
